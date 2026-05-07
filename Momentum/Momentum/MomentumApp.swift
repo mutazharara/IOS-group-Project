@@ -9,9 +9,19 @@ import SwiftUI
 
 @main
 struct MomentumApp: App {
+    // store holds all our habits and is shared across the whole app
+    @StateObject var store = HabitStore()
+
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            SplashView()
+                .environmentObject(store)
+                .onAppear {
+                    // ask the user for notification permission when app opens
+                    NotificationManager.shared.requestPermission()
+                }
         }
     }
 }
+
+

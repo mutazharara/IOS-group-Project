@@ -8,17 +8,54 @@
 import SwiftUI
 
 struct ContentView: View {
+    @EnvironmentObject var store: HabitStore
+    @State private var showAddHabit = false
+    @State private var selectedTab = 0
+
     var body: some View {
-        VStack {
-            Image(systemName: "globe")
-                .imageScale(.large)
-                .foregroundStyle(.tint)
-            Text("Hello, world!")
+        TabView(selection: $selectedTab) {
+
+            //home tab - shows todays habits
+            NavigationStack {
+                HomeView()
+            }
+            .tabItem {
+                Label("Home", systemImage: "house.fill")
+            }
+            .tag(0)
+
+            Color.clear
+                .tabItem {
+                    Label("Add", systemImage: "plus")
+                }
+                .tag(1)
+
+            // stats tab
+            NavigationStack {
+                Text("Statistics Coming Soon")
+                    .navigationTitle("Statistics")
+            }
+            .tabItem {
+                Label("Stats", systemImage: "chart.bar.fill")
+            }
+            .tag(2)
         }
-        .padding()
+        .accentColor(.black)
+        
+        .onChange(of: selectedTab) {
+            if selectedTab == 1 {
+                // open the add habit sheet and go back to home tab
+                showAddHabit = true
+                selectedTab = 0
+            }
+        }
+        .sheet(isPresented: $showAddHabit) {
+            AddHabitView()
+        }
     }
 }
 
 #Preview {
     ContentView()
+        .environmentObject(HabitStore())
 }
