@@ -30,15 +30,23 @@ struct ContentView: View {
                 }
                 .tag(1)
 
+            // timer tab
+            NavigationStack {
+                TimerView()
+            }
+            .tabItem {
+                Label("Timer", systemImage: "timer")
+            }
+            .tag(2)
+ 
             // stats tab
             NavigationStack {
-                Text("Statistics Coming Soon")
-                    .navigationTitle("Statistics")
+                StatsView()
             }
             .tabItem {
                 Label("Stats", systemImage: "chart.bar.fill")
             }
-            .tag(2)
+            .tag(3)
         }
         .accentColor(.black)
         
