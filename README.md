@@ -1,3 +1,7 @@
+# Clone the repository:
+
+https://github.com/mutazharara/IOS-group-Project.git
+
 # Momentum habit tracker
 
 Momentum is a habit tracking iOS app built with SwiftUI that helps users build good habits, quit bad ones, and stay consistent every day.
