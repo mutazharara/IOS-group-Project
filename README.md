@@ -19,9 +19,11 @@ Momentum is a habit tracking iOS app built with SwiftUI that helps users build g
 
 ## Screens
 
-- Home (Today habits)
+- Splash
+- Home
 - Add Habit
-- Habit Details
+- Edit Habit
+- View Habit Details
 - Stats
 - Timer Sheet
 
