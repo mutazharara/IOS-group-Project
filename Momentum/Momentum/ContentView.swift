@@ -15,7 +15,6 @@ struct ContentView: View {
     var body: some View {
         TabView(selection: $selectedTab) {
 
-            //home tab - shows todays habits
             NavigationStack {
                 HomeView()
             }
@@ -24,42 +23,17 @@ struct ContentView: View {
             }
             .tag(0)
 
-            Color.clear
-                .tabItem {
-                    Label("Add", systemImage: "plus")
-                }
-                .tag(1)
 
-            // timer tab
-            NavigationStack {
-                TimerView()
-            }
-            .tabItem {
-                Label("Timer", systemImage: "timer")
-            }
-            .tag(2)
- 
-            // stats tab
             NavigationStack {
                 StatsView()
             }
             .tabItem {
                 Label("Stats", systemImage: "chart.bar.fill")
             }
-            .tag(3)
+            .tag(2)
         }
-        .accentColor(.black)
+        .accentColor(.orange)
         
-        .onChange(of: selectedTab) {
-            if selectedTab == 1 {
-                // open the add habit sheet and go back to home tab
-                showAddHabit = true
-                selectedTab = 0
-            }
-        }
-        .sheet(isPresented: $showAddHabit) {
-            AddHabitView()
-        }
     }
 }
 

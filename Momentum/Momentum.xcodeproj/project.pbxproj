@@ -6,6 +6,10 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		53B0507B2FB08AE6005D509E /* JDStatusBarNotification in Frameworks */ = {isa = PBXBuildFile; productRef = 53B0507A2FB08AE6005D509E /* JDStatusBarNotification */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXFileReference section */
 		53B04FC52FA6F7CF005D509E /* Momentum.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Momentum.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
@@ -23,6 +27,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				53B0507B2FB08AE6005D509E /* JDStatusBarNotification in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -65,6 +70,7 @@
 			);
 			name = Momentum;
 			packageProductDependencies = (
+				53B0507A2FB08AE6005D509E /* JDStatusBarNotification */,
 			);
 			productName = Momentum;
 			productReference = 53B04FC52FA6F7CF005D509E /* Momentum.app */;
@@ -94,6 +100,9 @@
 			);
 			mainGroup = 53B04FBC2FA6F7CF005D509E;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				53B050792FB08AE6005D509E /* XCRemoteSwiftPackageReference "JDStatusBarNotification" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 53B04FC62FA6F7CF005D509E /* Products */;
 			projectDirPath = "";
@@ -334,6 +343,25 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		53B050792FB08AE6005D509E /* XCRemoteSwiftPackageReference "JDStatusBarNotification" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/calimarkus/JDStatusBarNotification.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.2.4;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		53B0507A2FB08AE6005D509E /* JDStatusBarNotification */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 53B050792FB08AE6005D509E /* XCRemoteSwiftPackageReference "JDStatusBarNotification" */;
+			productName = JDStatusBarNotification;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 53B04FBD2FA6F7CF005D509E /* Project object */;
 }

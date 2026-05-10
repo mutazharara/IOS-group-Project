@@ -44,6 +44,8 @@ struct Habit: Identifiable, Codable {
     var unit: HabitUnit
     var reminderTime: Date
     var completedDates: [String] = []
+    var skippedDates: [String] = []
+    var createdDate: Date = Date()
 
     // get today's date as a string like "2026-05-04"
     var todayString: String {
@@ -64,6 +66,18 @@ struct Habit: Identifiable, Codable {
             completedDates.removeAll { $0 == today }
         } else {
             completedDates.append(today)
+        }
+    }
+    
+    // skip today habit
+    mutating func skipToday() {
+        let today = todayString
+
+        if skippedDates.contains(today) {
+            skippedDates.removeAll { $0 == today }
+        } else {
+            skippedDates.append(today)
+            completedDates.removeAll { $0 == today }
         }
     }
 }
@@ -115,6 +129,14 @@ class HabitStore: ObservableObject {
             save()
         }
     }
+    
+    // skip Today habit
+    func skipToday(_ habit: Habit) {
+        if let i = habits.firstIndex(where: { $0.id == habit.id }) {
+            habits[i].skipToday()
+            save()
+        }
+    }
 
     // save all habits to UserDefaults so they dont disappear when app closes
     private func save() {
@@ -134,6 +156,31 @@ class HabitStore: ObservableObject {
 
 // list of icons the user can pick from
 let habitIcons = [
-    "drop.fill", "book.fill", "moon.fill", "bolt.fill",
-    "figure.walk", "heart.fill", "pencil", "flame.fill"
+    // Health
+    "drop.fill", "heart.fill", "leaf.fill", "bandage.fill",
+    
+    // Fitness
+    "figure.walk", "figure.run", "figure.strengthtraining.traditional",
+    "flame.fill",
+    
+    // Learning / Work
+    "book.fill", "pencil", "laptopcomputer", "brain.head.profile",
+    
+    // Sleep / Mind
+    "moon.fill", "bed.double.fill", "sun.max.fill",
+    
+    // Productivity
+    "checkmark.circle.fill", "calendar", "clock.fill", "timer",
+    
+    // Money / Lifestyle
+    "dollarsign.circle.fill", "cart.fill", "creditcard.fill",
+    
+    // Food / Drink
+    "fork.knife", "cup.and.saucer.fill", "takeoutbag.and.cup.and.straw.fill",
+    
+    // Travel / Fun
+    "airplane", "car.fill", "gamecontroller.fill",
+    
+    // Misc
+    "bolt.fill", "star.fill", "gift.fill", "music.note"
 ]

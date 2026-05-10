@@ -10,13 +10,18 @@
 //
 
 import SwiftUI
+import JDStatusBarNotification
 
 struct HabitDetailView: View {
     @EnvironmentObject var store: HabitStore
     @Environment(\.dismiss) var dismiss
+    @State private var displayedMonth = Date()
 
     let habit: Habit
-
+    var habitTagColor: Color {
+        habit.type == .quit ? .red : .green
+    }
+    let weekLabels = ["M", "T", "W", "T", "F", "S", "S"]
     private let accent = Color.orange
     private let softBackground = Color(red: 0.97, green: 0.97, blue: 0.94)
     private let cardColor = Color.white
@@ -29,22 +34,27 @@ struct HabitDetailView: View {
                 VStack(alignment: .leading, spacing: 16) {
                     HStack(spacing: 14) {
                         Image(systemName: habit.icon)
-                            .font(.system(size: 36))
-                            .foregroundColor(accent)
+                            .font(.system(size: 26))
+                            .foregroundColor(.orange)
+                            .frame(width: 58, height: 58)
+                            .background(Color.orange.opacity(0.12))
+                            .cornerRadius(16)
 
                         VStack(alignment: .leading, spacing: 8) {
                             Text(habit.name)
-                                .font(.title2)
+                                .font(.title3)
                                 .fontWeight(.bold)
 
-                            Text("\(habit.type.rawValue) Habit")
-                                .font(.caption)
-                                .fontWeight(.bold)
-                                .foregroundColor(.green)
-                                .padding(.horizontal, 10)
-                                .padding(.vertical, 5)
-                                .background(Color.green.opacity(0.14))
-                                .cornerRadius(12)
+                            HStack(spacing: 4) {
+                                Label(formattedTime(habit.reminderTime), systemImage: "clock")
+                                    .font(.caption)
+                                    .fontWeight(.bold)
+                                    .foregroundColor(accent)
+                                    .padding(.horizontal, 6)
+                                    .padding(.vertical, 4)
+                                    .background(accent.opacity(0.14))
+                                    .cornerRadius(12)
+                            }
                         }
 
                         Spacer()
@@ -54,40 +64,20 @@ struct HabitDetailView: View {
                 .frame(maxWidth: .infinity)
                 .background(cardColor)
                 .cornerRadius(24)
-
-                // Info Cards
-                HStack(spacing: 12) {
-                    smallInfoCard(icon: "target", title: "Goal", value: "\(habit.goal) \(habit.unit.rawValue)")
-                    smallInfoCard(icon: "clock", title: "Frequency", value: habit.frequency.rawValue)
-                    smallInfoCard(icon: "flame.fill", title: "Streak", value: "\(currentStreak())d")
-                }
-
-                // Schedule Card
-                VStack(alignment: .leading, spacing: 14) {
-                    sectionTitle(icon: "calendar", title: "SCHEDULE")
-
-                    Text(formattedTime(habit.reminderTime))
-                        .font(.subheadline)
-                        .fontWeight(.bold)
-                        .foregroundColor(accent)
-                        .padding(.horizontal, 14)
-                        .padding(.vertical, 8)
-                        .background(accent.opacity(0.12))
-                        .cornerRadius(16)
-                }
-                .cardStyle()
-
+                
+                
                 // Action Buttons
                 HStack(spacing: 12) {
                     Button {
-                        // skip logic can be added later
+                        store.skipToday(habit)
                     } label: {
-                        Label("Skip", systemImage: "arrow.right")
+                        Label(  isSkippedToday() ? "Undo Skip" : "Skip",
+                                systemImage: isSkippedToday() ? "arrow.uturn.backward" : "arrow.right" )
                             .font(.headline)
-                            .foregroundColor(accent)
+                            .foregroundColor(.red)
                             .frame(maxWidth: .infinity)
                             .padding()
-                            .background(accent.opacity(0.12))
+                            .background(Color.red.opacity(0.12))
                             .cornerRadius(18)
                     }
 
@@ -107,6 +97,15 @@ struct HabitDetailView: View {
                     }
                 }
 
+                // Info Cards
+                HStack(spacing: 12) {
+                    smallInfoCard(icon: "target", title: "Goal", value: "\(habit.goal) \(habit.unit.rawValue)")
+                    smallInfoCard(icon: "clock", title: "Frequency", value: habit.frequency.rawValue)
+                    smallInfoCard(icon: "flame", title: "Streak", value: "\(currentStreak())d")
+                }
+
+
+
                 // Week Streak Card
                 VStack(alignment: .leading, spacing: 16) {
                     HStack {
@@ -124,12 +123,13 @@ struct HabitDetailView: View {
                     HStack {
                         ForEach(Array(currentWeekDates.enumerated()), id: \.offset) { _, date in
                             let completed = isCompleted(on: date)
-                            let future = isFuture(date)
 
                             VStack(spacing: 8) {
                                 ZStack {
                                     Circle()
-                                        .fill(completed ? Color.green.opacity(0.18) : Color.white)
+                                        .fill(completed ? Color.green.opacity(0.18) :
+                                                (isSkipped(on: date) || isMissed(date)) ? Color.red.opacity(0.18) :
+                                                Color.white)
                                         .frame(width: 38, height: 38)
                                         .overlay(
                                             Circle()
@@ -138,17 +138,15 @@ struct HabitDetailView: View {
 
                                     if completed {
                                         Image(systemName: "checkmark")
-                                            .font(.system(size: 14, weight: .bold))
                                             .foregroundColor(.green)
-                                    } else if !future {
+                                    } else if isSkipped(on: date) || isMissed(date) {
                                         Image(systemName: "xmark")
-                                            .font(.system(size: 14, weight: .bold))
-                                            .foregroundColor(.red.opacity(0.7))
+                                            .foregroundColor(.red)
                                     }
                                 }
 
                                 Image(systemName: "flame.fill")
-                                    .font(.caption)
+                                    .font(.headline)
                                     .foregroundColor(completed ? accent : .gray.opacity(0.5))
 
                                 Text(dayShort(for: date))
@@ -163,30 +161,84 @@ struct HabitDetailView: View {
                 .cardStyle()
 
                 // Calendar Card
-                VStack(alignment: .leading, spacing: 16) {
+                VStack(alignment: .leading, spacing: 18) {
                     sectionTitle(icon: "calendar", title: "CALENDAR")
 
-                    Text(monthTitle())
-                        .font(.headline)
-                        .frame(maxWidth: .infinity)
+                    HStack {
+                        Button {
+                            changeMonth(by: -1)
+                        } label: {
+                            Image(systemName: "chevron.left")
+                                .foregroundColor(accent)
+                                .font(.headline)
+                        }
 
-                    LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 7), spacing: 16) {
-                        ForEach(["M", "T", "W", "T", "F", "S", "S"], id: \.self) { day in
+                        Spacer()
+
+                        Text(monthTitle(for: displayedMonth))
+                            .font(.headline)
+                            .fontWeight(.bold)
+
+                        Spacer()
+
+                        Button {
+                            changeMonth(by: 1)
+                        } label: {
+                            Image(systemName: "chevron.right")
+                                .foregroundColor(accent)
+                                .font(.headline)
+                        }
+                    }
+
+                    LazyVGrid(
+                        columns: Array(repeating: GridItem(.flexible()), count: 7),
+                        spacing: 14
+                    ) {
+                        
+                        ForEach(Array(weekLabels.enumerated()), id: \.offset) { _, day in
                             Text(day)
                                 .font(.caption)
                                 .fontWeight(.semibold)
                                 .foregroundColor(.secondary)
                         }
 
-                        ForEach(monthDates(), id: \.self) { date in
-                            if Calendar.current.component(.month, from: date) == Calendar.current.component(.month, from: Date()) {
-                                Text("\(Calendar.current.component(.day, from: date))")
-                                    .font(.subheadline)
-                                    .fontWeight(.semibold)
-                                    .frame(width: 38, height: 38)
-                                    .background(isCompleted(on: date) ? Color.green.opacity(0.18) : Color.clear)
-                                    .foregroundColor(.primary)
-                                    .cornerRadius(10)
+                        ForEach(monthDates(for: displayedMonth), id: \.self) { date in
+                            let isCurrentMonth =
+                                Calendar.current.component(.month, from: date) ==
+                                Calendar.current.component(.month, from: displayedMonth)
+
+                            let completed = isCompleted(on: date)
+                            let skipped = isSkipped(on: date)
+                            let today = Calendar.current.isDateInToday(date)
+
+                            if isCurrentMonth {
+                                ZStack {
+                                    RoundedRectangle(cornerRadius: 10)
+                                        .fill(
+                                            today ? accent :
+                                            completed ? Color.green.opacity(0.18) :
+                                            (skipped || isMissed(date)) ? Color.red.opacity(0.16) :
+                                            Color.clear
+                                        )
+                                        .frame(width: 38, height: 38)
+
+                                    VStack(spacing: 2) {
+                                        Text("\(Calendar.current.component(.day, from: date))")
+                                            .font(.subheadline)
+                                            .fontWeight(.semibold)
+                                            .foregroundColor(today ? .white : .primary)
+
+                                        if completed {
+                                            Image(systemName: "checkmark")
+                                                .font(.system(size: 11, weight: .bold))
+                                                .foregroundColor(today ? .white : .green)
+                                        } else if skipped || isMissed(date) {
+                                            Image(systemName: "xmark")
+                                                .font(.system(size: 11, weight: .bold))
+                                                .foregroundColor(today ? .white : .red)
+                                        }
+                                    }
+                                }
                             } else {
                                 Text("")
                                     .frame(width: 38, height: 38)
@@ -200,22 +252,24 @@ struct HabitDetailView: View {
                 VStack(alignment: .leading, spacing: 16) {
                     sectionTitle(icon: "clock.arrow.circlepath", title: "HISTORY")
 
-                    if habit.completedDates.isEmpty {
+                    let historyItems = combinedHistory()
+
+                    if historyItems.isEmpty {
                         Text("No history yet")
                             .foregroundColor(.secondary)
                     } else {
-                        ForEach(habit.completedDates.suffix(4).reversed(), id: \.self) { date in
+                        ForEach(historyItems.prefix(6), id: \.id) { item in
                             HStack(spacing: 12) {
-                                Image(systemName: "checkmark.circle.fill")
-                                    .foregroundColor(.green)
+                                Image(systemName: item.status == "Completed" ? "checkmark.circle.fill" : "xmark.circle.fill")
+                                    .foregroundColor(item.status == "Completed" ? .green : .red)
 
                                 VStack(alignment: .leading, spacing: 2) {
-                                    Text(historyDateText(date))
+                                    Text(historyDateText(item.date))
                                         .fontWeight(.semibold)
 
-                                    Text("Completed")
+                                    Text(item.status)
                                         .font(.caption)
-                                        .foregroundColor(.green)
+                                        .foregroundColor(item.status == "Completed" ? .green : .red)
                                 }
 
                                 Spacer()
@@ -226,26 +280,40 @@ struct HabitDetailView: View {
                 .cardStyle()
             }
             .padding()
+            .padding(.bottom, 18)
         }
-        .background(softBackground.ignoresSafeArea())
+        .background(softBackground)
         .navigationTitle("Details")
         .navigationBarTitleDisplayMode(.inline)
+        .safeAreaInset(edge: .top) {
+            Color.clear.frame(height: 0)
+        }
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
                 HStack(spacing: 12) {
                     
                     // Edit Button
-                    Button("Edit") {
-                        // navigate to EditHabitView later
+                    NavigationLink {
+                        EditHabitView(habit: habit)
+                    } label: {
+                        Text("Edit")
+                            .fontWeight(.bold)
+                            .foregroundColor(.orange)
                     }
-                    .fontWeight(.bold)
-                    .foregroundColor(.orange)
                     
                     // Three Dots Menu
                     Menu {
                         Button(role: .destructive) {
                             store.deleteHabit(habit)
-                            dismiss()
+                            NotificationPresenter.shared.present(
+                                "✓ Habit deleted successfully",
+                                includedStyle: .success,
+                                duration: 1.2
+                            )
+
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
+                                dismiss()
+                            }
                         } label: {
                             Label("Delete Habit", systemImage: "trash")
                         }
@@ -259,6 +327,7 @@ struct HabitDetailView: View {
             }
         }
     }
+    
 
     func smallInfoCard(icon: String, title: String, value: String) -> some View {
         VStack(spacing: 8) {
@@ -342,19 +411,24 @@ struct HabitDetailView: View {
 
         return streak
     }
-
-    func monthTitle() -> String {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "MMMM yyyy"
-        return formatter.string(from: Date())
+    
+    func changeMonth(by value: Int) {
+        if let newMonth = Calendar.current.date(byAdding: .month, value: value, to: displayedMonth) {
+            displayedMonth = newMonth
+        }
     }
 
-    func monthDates() -> [Date] {
-        let calendar = Calendar.current
-        let today = Date()
+    func monthTitle(for date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "MMMM yyyy"
+        return formatter.string(from: date)
+    }
 
-        guard let monthInterval = calendar.dateInterval(of: .month, for: today),
-              let monthRange = calendar.range(of: .day, in: .month, for: today) else {
+    func monthDates(for date: Date) -> [Date] {
+        let calendar = Calendar.current
+
+        guard let monthInterval = calendar.dateInterval(of: .month, for: date),
+              let monthRange = calendar.range(of: .day, in: .month, for: date) else {
             return []
         }
 
@@ -368,10 +442,64 @@ struct HabitDetailView: View {
             calendar.date(byAdding: .day, value: $0, to: startDate)
         }
     }
+    
+    func isSkipped(on date: Date) -> Bool {
+        habit.skippedDates.contains(dateString(date))
+    }
 
     func historyDateText(_ dateString: String) -> String {
+        let inputFormatter = DateFormatter()
+        inputFormatter.dateFormat = "yyyy-MM-dd"
+
+        let outputFormatter = DateFormatter()
+        outputFormatter.dateFormat = "dd-MM-yyyy"
+
+        if let date = inputFormatter.date(from: dateString) {
+            return outputFormatter.string(from: date)
+        }
+
         return dateString
     }
+    
+    func isMissed(_ date: Date) -> Bool {
+        let calendar = Calendar.current
+
+        let today = calendar.startOfDay(for: Date())
+        let checkDate = calendar.startOfDay(for: date)
+        let created = calendar.startOfDay(for: habit.createdDate)
+
+        // Only dates after habit was created can be missed
+        return checkDate >= created &&
+               checkDate < today &&
+               !isCompleted(on: date) &&
+               !isSkipped(on: date)
+    }
+    
+    func isSkippedToday() -> Bool {
+        habit.skippedDates.contains(dateString(Date()))
+    }
+    
+    func combinedHistory() -> [HistoryItem] {
+        let completed = habit.completedDates.map {
+            HistoryItem(date: $0, status: "Completed")
+        }
+
+        let skipped = habit.skippedDates.map {
+            HistoryItem(date: $0, status: "Skipped")
+        }
+
+        return (completed + skipped).sorted {
+            $0.date > $1.date
+        }
+    }
+    
+    
+}
+
+struct HistoryItem: Identifiable {
+    let id = UUID()
+    let date: String
+    let status: String
 }
 
 extension View {
@@ -396,9 +524,10 @@ extension View {
         completedDates: [
             "2026-05-04",
             "2026-05-05",
-            "2026-05-06",
             "2026-05-07"
-        ]
+        ],
+        skippedDates: ["2026-05-06"],
+        createdDate: Date()
     )
 
     let store = HabitStore()
